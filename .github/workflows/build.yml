@@ -1,0 +1,90 @@
+name: Build ESPet Firmware
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install PlatformIO
+        run: pip install platformio
+
+      - name: Cache PlatformIO packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.platformio
+          key: ${{ runner.os }}-pio-${{ hashFiles('platformio.ini') }}
+          restore-keys: |
+            ${{ runner.os }}-pio-
+
+      # Build für Wokwi (SSD1306) + echte Hardware (SH1106) in einem Run
+      - name: Build Wokwi firmware (SSD1306)
+        run: |
+          # Temporarily enable SSD1306, disable SH1106
+          sed -i 's|; -D DISPLAY_SH1106|-D DISPLAY_SH1106_DISABLED|' platformio.ini
+          pio run
+          mkdir -p firmware
+          cp .pio/build/esp32dev/firmware.bin firmware/firmware_wokwi.bin
+          cp .pio/build/esp32dev/firmware.elf firmware/firmware_wokwi.elf
+
+      - name: Build real-hardware firmware (SH1106)
+        run: |
+          # Switch to SH1106
+          sed -i 's|-D DISPLAY_SSD1306|; -D DISPLAY_SSD1306|'            platformio.ini
+          sed -i 's|-D DISPLAY_SH1106_DISABLED|-D DISPLAY_SH1106|'       platformio.ini
+          pio run
+          cp .pio/build/esp32dev/firmware.bin firmware/firmware_sh1106.bin
+          cp .pio/build/esp32dev/firmware.elf firmware/firmware_sh1106.elf
+
+      - name: Write build info
+        run: |
+          cat > firmware/BUILD_INFO.txt <<EOF
+          ESPet Firmware Build
+          ====================
+          Date:   $(date -u '+%Y-%m-%d %H:%M UTC')
+          Commit: ${{ github.sha }}
+          Branch: ${{ github.ref_name }}
+
+          Files
+          -----
+          firmware_wokwi.bin  → Wokwi web simulator (SSD1306 display driver)
+          firmware_sh1106.bin → Real hardware: AZ-Delivery 1.3" OLED (SH1106)
+
+          Flash command (real hardware)
+          -----------------------------
+          esptool.py --chip esp32 --port /dev/ttyUSB0 --baud 460800 \
+            write_flash -z 0x1000 firmware_sh1106.bin
+
+          Wokwi
+          -----
+          Use firmware_wokwi.bin + diagram.json on https://wokwi.com
+          EOF
+
+      - name: Upload firmware as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: espet-firmware-${{ github.ref_name }}-${{ github.sha }}
+          path: firmware/
+          retention-days: 90
+
+      # Optional: commit firmware binaries directly to repo
+      - name: Commit firmware to repo
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/claude/')
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add firmware/
+          git diff --cached --quiet || git commit -m "ci: update firmware binaries [skip ci]"
+          git push
