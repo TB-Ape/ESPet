@@ -1,0 +1,113 @@
+{
+  "version": 1,
+  "author": "ESPet",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "board-esp32-devkit-v1",
+      "id": "esp32",
+      "top": 0,
+      "left": 0,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-ssd1306",
+      "id": "oled1",
+      "top": -120,
+      "left": 120,
+      "attrs": {
+        "i2cAddress": "0x3C"
+      }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn_feed",
+      "top": 180,
+      "left": -100,
+      "attrs": {
+        "color": "green",
+        "label": "FEED"
+      }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn_play",
+      "top": 180,
+      "left": -20,
+      "attrs": {
+        "color": "blue",
+        "label": "PLAY"
+      }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn_sleep",
+      "top": 180,
+      "left": 60,
+      "attrs": {
+        "color": "yellow",
+        "label": "SLEEP"
+      }
+    },
+    {
+      "type": "wokwi-buzzer",
+      "id": "bz1",
+      "top": 100,
+      "left": -180,
+      "attrs": {
+        "volume": "0.5"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r1",
+      "top": 140,
+      "left": -100,
+      "attrs": { "value": "10000" },
+      "rotate": 90
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r2",
+      "top": 140,
+      "left": -20,
+      "attrs": { "value": "10000" },
+      "rotate": 90
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r3",
+      "top": 140,
+      "left": 60,
+      "attrs": { "value": "10000" },
+      "rotate": 90
+    }
+  ],
+  "connections": [
+    ["esp32:GND.1", "$serialMonitor:GND", "", []],
+    ["esp32:TX0",   "$serialMonitor:RX",  "", []],
+
+    ["esp32:21", "oled1:SDA", "green",  []],
+    ["esp32:22", "oled1:SCL", "yellow", []],
+    ["esp32:3V3", "oled1:VCC", "red",  []],
+    ["esp32:GND.2", "oled1:GND", "black", []],
+
+    ["esp32:0",  "btn_feed:1.l",  "orange", []],
+    ["esp32:35", "btn_play:1.l",  "blue",   []],
+    ["esp32:34", "btn_sleep:1.l", "purple", []],
+    ["esp32:GND.1", "btn_feed:2.l",  "black", []],
+    ["esp32:GND.1", "btn_play:2.l",  "black", []],
+    ["esp32:GND.1", "btn_sleep:2.l", "black", []],
+
+    ["esp32:3V3", "r1:1", "red", []],
+    ["esp32:3V3", "r2:1", "red", []],
+    ["esp32:3V3", "r3:1", "red", []],
+    ["r1:2", "btn_feed:1.l",  "", []],
+    ["r2:2", "btn_play:1.l",  "", []],
+    ["r3:2", "btn_sleep:1.l", "", []],
+
+    ["esp32:25", "bz1:1", "gray",  []],
+    ["esp32:GND.1", "bz1:2", "black", []]
+  ],
+  "dependencies": {}
+}

@@ -5,9 +5,17 @@
 #include "../Config.h"
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// Renderer – U8g2 SH1106 128×64, full-buffer mode
+// Renderer – SH1106 (real hardware) or SSD1306 (Wokwi simulation)
+// Select via platformio.ini build flags:
+//   -D DISPLAY_SH1106   → AZ-Delivery 1.3" real display
+//   -D DISPLAY_SSD1306  → Wokwi web simulator
 // Runs on Core 1 at 30fps
 // ═══════════════════════════════════════════════════════════════════════════════
+
+// Default to SH1106 if neither flag is set
+#if !defined(DISPLAY_SH1106) && !defined(DISPLAY_SSD1306)
+  #define DISPLAY_SH1106
+#endif
 
 enum class Screen : uint8_t {
     PET       = 0,  // normal pet view
@@ -19,11 +27,16 @@ enum class Screen : uint8_t {
 
 class Renderer {
 public:
-    // U8g2: AZ-Delivery 1.3" = SH1106 128x64, HW I2C
+    // U8g2: select driver based on compile flag
+#if defined(DISPLAY_SSD1306)
+    // Wokwi simulation: SSD1306
+    U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2;
+    Renderer() : u8g2(U8G2_R0, U8X8_PIN_NONE, PIN_SCL, PIN_SDA) {}
+#else
+    // Real hardware: AZ-Delivery 1.3" = SH1106
     U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2;
-
-    Renderer() : u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE,
-                       /* clock=*/ PIN_SCL, /* data=*/ PIN_SDA) {}
+    Renderer() : u8g2(U8G2_R0, U8X8_PIN_NONE, PIN_SCL, PIN_SDA) {}
+#endif
 
     void init();
 
